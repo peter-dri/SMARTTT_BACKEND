@@ -7,5 +7,6 @@ router = DefaultRouter()
 router.register("users", UserViewSet, basename="users")
 
 urlpatterns = [
+	path("me/", UserViewSet.as_view({"get": "me", "put": "me", "patch": "me"}), name="me"),
 	path("", include(router.urls)),
 ]
