@@ -92,8 +92,8 @@ class TimetablePersistenceService:
             ).get(
                 curriculum__program__code=row["program_code"],
                 unit__code=row["unit_code"],
-                year_of_study=row["year_of_study"],
-                semester=row["semester"]
+                curriculum__study_year=row["year_of_study"],
+                curriculum__semester=row["semester"]
             )
         except CurriculumUnit.DoesNotExist:
             raise ResourceNotFoundException(
