@@ -1,3 +1,6 @@
+from .serializers import CurriculumSerializer, CurriculumUnitSerializer
+
+__all__ = ["CurriculumSerializer", "CurriculumUnitSerializer"]
 from .curriculum_serializer import (
 	CurriculumSerializer,
 	CurriculumUnitSerializer,

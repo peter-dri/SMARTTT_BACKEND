@@ -1,3 +1,26 @@
+from rest_framework.exceptions import ValidationError
+from apps.curriculum.models.models import Curriculum, CurriculumUnit
+
+
+def validate_no_duplicate_units(curriculum, unit):
+    if CurriculumUnit.objects.filter(curriculum=curriculum, unit=unit).exists():
+        raise ValidationError("Unit is already assigned to this curriculum.")
+
+
+def validate_duplicate_curriculum_version(program, academic_year, study_year, semester, version):
+    if Curriculum.objects.filter(program=program, academic_year=academic_year, study_year=study_year, semester=semester, version=version).exists():
+        raise ValidationError("Curriculum version already exists for this program/study year/semester.")
+
+
+def validate_semester_value(semester):
+    if semester < 1 or semester > 3:
+        raise ValidationError("Invalid semester value.")
+
+
+def validate_required_units_present(curriculum):
+    core_count = CurriculumUnit.objects.filter(curriculum=curriculum, is_core=True).count()
+    if core_count == 0:
+        raise ValidationError("Curriculum must contain at least one core unit.")
 from collections import Counter
 
 from django.core.exceptions import ValidationError

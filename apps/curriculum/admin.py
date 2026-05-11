@@ -1,4 +1,18 @@
 from django.contrib import admin
+from apps.curriculum.models.models import Curriculum, CurriculumUnit
+
+
+@admin.register(Curriculum)
+class CurriculumAdmin(admin.ModelAdmin):
+    list_display = ("id", "program", "academic_year", "study_year", "semester", "version", "status")
+    list_filter = ("program", "academic_year", "status")
+
+
+@admin.register(CurriculumUnit)
+class CurriculumUnitAdmin(admin.ModelAdmin):
+    list_display = ("id", "curriculum", "unit", "is_core", "is_elective", "display_order")
+    list_filter = ("is_core", "is_elective")
+from django.contrib import admin
 
 from .models import Curriculum, CurriculumUnit, CurriculumVersion
 

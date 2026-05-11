@@ -1,3 +1,29 @@
+from apps.curriculum.models.models import Curriculum
+
+
+class CurriculumVersioningService:
+    @staticmethod
+    def create_new_version(curriculum, created_by=None):
+        # duplicate the curriculum as a new version (increment version)
+        new_version = Curriculum.objects.create(
+            program=curriculum.program,
+            academic_year=curriculum.academic_year,
+            study_year=curriculum.study_year,
+            semester=curriculum.semester,
+            version=curriculum.version + 1,
+            status="inactive",
+            created_by=created_by,
+        )
+        # caller should duplicate units
+        return new_version
+
+    @staticmethod
+    def activate_version(curriculum):
+        # deactivate other versions for the same program/year/semester
+        Curriculum.objects.filter(program=curriculum.program, academic_year=curriculum.academic_year, study_year=curriculum.study_year, semester=curriculum.semester).update(status="inactive")
+        curriculum.status = "active"
+        curriculum.save()
+        return curriculum
 from django.db import transaction
 
 from apps.curriculum.models import Curriculum, CurriculumVersion

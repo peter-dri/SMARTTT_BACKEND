@@ -1,3 +1,29 @@
+from apps.curriculum.models.models import Curriculum, CurriculumUnit
+
+
+class CurriculumMapper:
+    @staticmethod
+    def fetch_curriculum(program, study_year, semester, academic_year=None, active_only=True):
+        qs = Curriculum.objects.filter(program=program, study_year=study_year, semester=semester)
+        if academic_year:
+            qs = qs.filter(academic_year=academic_year)
+        if active_only:
+            qs = qs.filter(status="active")
+        # prefer latest version
+        qs = qs.order_by("-version")
+        return qs.first()
+
+    @staticmethod
+    def units_for_curriculum(curriculum):
+        if not curriculum:
+            return CurriculumUnit.objects.none()
+        return curriculum.units.select_related("unit").all()
+
+    @staticmethod
+    def determine_units_for_student(program, study_year, semester, academic_year=None):
+        curriculum = CurriculumMapper.fetch_curriculum(program, study_year, semester, academic_year=academic_year)
+        units = CurriculumMapper.units_for_curriculum(curriculum)
+        return [cu.unit for cu in units]
 from django.core.exceptions import ValidationError
 
 from apps.curriculum.models import Curriculum
