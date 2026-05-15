@@ -27,7 +27,9 @@ INSTALLED_APPS = [
 	"apps.programs",
 	"apps.units",
 	"apps.curriculum",
+	"apps.personalization",
 	"apps.timetable",
+	"apps.uploads",
 	"apps.enrollments",
 	"apps.rooms",
 	"apps.analytics",
@@ -96,6 +98,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
+def env_list(name, default=""):
+	value = os.getenv(name, default)
+	if not value:
+		return []
+	return [item.strip() for item in value.split(",") if item.strip()]
+
 REST_FRAMEWORK = {
 	"DEFAULT_AUTHENTICATION_CLASSES": (
 		"rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -121,3 +130,5 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")

@@ -318,7 +318,7 @@ print(f"Year 2, Semester 1: {year2_sem1.count()}")
 
 ```bash
 # Get token
-TOKEN=$(curl -s -X POST http://localhost:8000/api/token/ \
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"password"}' | jq -r '.access')
 

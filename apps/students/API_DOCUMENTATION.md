@@ -4,9 +4,14 @@
 
 All endpoints require JWT authentication unless noted otherwise.
 
+The backend exposes two login paths:
+
+- `POST /api/v1/auth/token/` uses SimpleJWT and returns `access` and `refresh`.
+- `POST /api/v1/accounts/auth/login/` uses the custom accounts login view and returns `token`, `refresh`, and `user`.
+
 ```bash
 # Obtain token
-curl -X POST http://localhost:8000/api/token/ \
+curl -X POST http://localhost:8000/api/v1/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"user@example.com","password":"password"}'
 

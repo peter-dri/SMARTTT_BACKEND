@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate
 from django.db import transaction
 
 from apps.accounts.models import User
-from apps.departments.models.department import Department
+from apps.departments.models import Department
 from apps.programs.models.program import Program
 from apps.students.models.student import Student
 

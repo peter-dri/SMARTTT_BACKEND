@@ -86,9 +86,11 @@ http://localhost:8000/admin/
 
 ### Create a Student
 
+The backend exposes both `POST /api/v1/auth/token/` for SimpleJWT and `POST /api/v1/accounts/auth/login/` for the custom accounts login flow. Use the one your frontend expects.
+
 ```bash
 # Get JWT token
-curl -X POST http://localhost:8000/api/token/ \
+curl -X POST http://localhost:8000/api/v1/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"password"}'
 
