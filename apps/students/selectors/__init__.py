@@ -8,8 +8,10 @@ Pattern: Selectors should be used for all read operations to
 ensure consistent query optimization.
 """
 
-from typing import List, Optional, QuerySet
-from django.db.models import Q, Prefetch, Select Related
+from typing import List, Optional
+
+from django.db.models import Q, Prefetch
+from django.db.models.query import QuerySet
 
 from apps.students.models import Student, AcademicProgress, StudentEnrollment
 
@@ -51,8 +53,8 @@ class StudentSelector:
                 queryset = queryset.filter(program_id=program_id)
             if academic_status := filters.get("academic_status"):
                 queryset = queryset.filter(academic_status=academic_status)
-            if is_active := filters.get("is_active") is not None:
-                queryset = queryset.filter(is_active=is_active)
+            if "is_active" in filters:
+                queryset = queryset.filter(is_active=filters.get("is_active"))
             if admission_year := filters.get("admission_year"):
                 queryset = queryset.filter(admission_year=admission_year)
             if current_study_year := filters.get("current_study_year"):

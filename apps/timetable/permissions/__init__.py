@@ -10,12 +10,16 @@ from .permissions import (
     IsStudentOrAdmin,
 )
 
+# Backward compatibility: older modules refer to "own timetable" permission.
+CanViewOwnTimetable = CanViewTimetable
+
 __all__ = [
     "IsSuperAdminOrReadOnly",
     "IsDepartmentAdminOrSuper",
     "IsRegistrarOrSuper",
     "CanManageTimetable",
     "CanViewTimetable",
+    "CanViewOwnTimetable",
     "CanManageRooms",
     "CanManageTimeSlots",
     "IsLecturerOrAdmin",

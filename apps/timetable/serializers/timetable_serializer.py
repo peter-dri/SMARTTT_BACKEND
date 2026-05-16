@@ -124,6 +124,20 @@ class TimetableSlotDetailedSerializer(serializers.ModelSerializer):
 
 class TimetableSlotSerializer(serializers.ModelSerializer):
     """Standard serializer for TimetableSlot model."""
+
+    subject = serializers.CharField(source="curriculum_unit.unit.name", read_only=True)
+    instructor = serializers.CharField(source="lecturer.user.get_full_name", read_only=True)
+    location = serializers.CharField(source="room.code", read_only=True)
+
+    curriculum_unit_display = serializers.CharField(
+        source="curriculum_unit.__str__",
+        read_only=True,
+    )
+    lecturer_display = serializers.CharField(
+        source="lecturer.user.get_full_name",
+        read_only=True,
+    )
+    room_display = serializers.CharField(source="room.code", read_only=True)
     
     class Meta:
         model = TimetableSlot
@@ -131,14 +145,22 @@ class TimetableSlotSerializer(serializers.ModelSerializer):
             "id",
             "term",
             "curriculum_unit",
+            "curriculum_unit_display",
             "lecturer",
+            "lecturer_display",
             "room",
+            "room_display",
             "day_of_week",
             "start_time",
             "end_time",
             "class_group",
             "upload_batch",
             "created_at",
+
+            # Frontend-friendly aliases
+            "subject",
+            "instructor",
+            "location",
         )
         read_only_fields = ("id", "created_at")
 

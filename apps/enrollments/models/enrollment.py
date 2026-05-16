@@ -12,7 +12,7 @@ class StudentEnrollment(BaseModel):
     student = models.ForeignKey(
         "students.Student",
         on_delete=models.CASCADE,
-        related_name="enrollments",
+        related_name="unit_enrollments",
     )
     curriculum_unit = models.ForeignKey(
         "curriculum.CurriculumUnit",

@@ -5,7 +5,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.curriculum.utils import get_user_department_id, is_registrar, is_super_admin
+from apps.accounts.utils import is_registrar, is_super_admin
+from apps.curriculum.utils import get_user_department_id
 from apps.uploads.permissions import CanManageTimetableUploads, CanViewTimetableUploads
 from apps.uploads.selectors import UploadSelector
 from apps.uploads.serializers import (

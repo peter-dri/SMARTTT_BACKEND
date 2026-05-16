@@ -17,3 +17,6 @@ __all__ = [
     "AcademicProgressSerializer",
     "StudentEnrollmentSerializer",
 ]
+
+# Alias for backwards compatibility
+StudentSerializer = StudentDetailSerializer

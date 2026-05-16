@@ -1,5 +1,5 @@
 from rest_framework.exceptions import ValidationError
-from apps.curriculum.models.models import Curriculum, CurriculumUnit
+from apps.curriculum.models import Curriculum, CurriculumUnit
 
 
 def validate_no_duplicate_units(curriculum, unit):

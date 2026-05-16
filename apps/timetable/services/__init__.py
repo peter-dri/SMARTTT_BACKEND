@@ -23,6 +23,3 @@ __all__ = [
 	"LecturerScheduleService",
 	"TimetableConflictService",
 ]
-	"TimetableConflictDetectionService",
-	"TimetableUploadPipelineService",
-]

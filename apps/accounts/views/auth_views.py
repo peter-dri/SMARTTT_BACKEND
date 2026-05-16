@@ -7,9 +7,9 @@ from django.contrib.auth import authenticate
 from django.db import transaction
 
 from apps.accounts.models import User
-from apps.departments.models import Department
-from apps.programs.models.program import Program
-from apps.students.models.student import Student
+from apps.departments.models import Department, Faculty
+from apps.programs.models import Program
+from apps.students.models import Student
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -26,8 +26,12 @@ def serialize_user(user):
         "full_name": user.get_full_name(),
         "admission_number": user.university_id,
         "course": student.program.name if student and student.program else None,
-        "department": student.program.department.name if student and student.program and student.program.department else None,
-        "year_of_study": student.current_year if student else None,
+        "department": (
+            student.department.name
+            if student and getattr(student, "department", None)
+            else (student.program.department.name if student and student.program and student.program.department else None)
+        ),
+        "year_of_study": student.current_study_year if student else None,
     }
 
 class RegisterView(APIView):
@@ -67,29 +71,42 @@ class RegisterView(APIView):
             import re
             dept_code = re.sub(r'[^A-Z]', '', department_name.upper())[:20]
             if not dept_code: dept_code = department_name.upper()[:20]
+
+            # Departments require a Faculty; create a safe default.
+            faculty, _ = Faculty.objects.get_or_create(
+                code="GEN",
+                defaults={"name": "General", "description": "Default faculty"},
+            )
             
             department, _ = Department.objects.get_or_create(
+                faculty=faculty,
                 name=department_name,
-                defaults={'code': dept_code}
+                defaults={"code": dept_code},
             )
             
             prog_code = re.sub(r'[^A-Z]', '', course_name.upper())[:30]
             if not prog_code: prog_code = course_name.upper()[:30]
 
             program, _ = Program.objects.get_or_create(
+                department=department,
                 name=course_name,
                 defaults={
                     'code': prog_code,
-                    'department': department
                 }
             )
 
             from datetime import datetime
             Student.objects.create(
                 user=user,
+                registration_number=admission_number,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                department=department,
                 program=program,
                 admission_year=datetime.now().year,
-                current_year=year_of_study
+                current_study_year=year_of_study,
+                current_semester=1,
             )
 
         tokens = get_tokens_for_user(user)
@@ -142,25 +159,33 @@ class ProfileView(APIView):
         student = getattr(user, 'student_profile', None)
         if student:
             if 'year_of_study' in data:
-                student.current_year = data['year_of_study']
+                student.current_study_year = data['year_of_study']
             if 'course' in data and 'department' in data:
                 import re
                 dept_code = re.sub(r'[^A-Z]', '', data['department'].upper())[:20]
                 if not dept_code: dept_code = data['department'].upper()[:20]
-                
+
+                faculty, _ = Faculty.objects.get_or_create(
+                    code="GEN",
+                    defaults={"name": "General", "description": "Default faculty"},
+                )
+
                 dept, _ = Department.objects.get_or_create(
+                    faculty=faculty,
                     name=data['department'],
-                    defaults={'code': dept_code}
+                    defaults={'code': dept_code},
                 )
                 
                 prog_code = re.sub(r'[^A-Z]', '', data['course'].upper())[:30]
                 if not prog_code: prog_code = data['course'].upper()[:30]
                 
                 prog, _ = Program.objects.get_or_create(
+                    department=dept,
                     name=data['course'],
-                    defaults={'code': prog_code, 'department': dept}
+                    defaults={'code': prog_code},
                 )
                 student.program = prog
+                student.department = dept
             student.save()
 
         return Response(serialize_user(user))

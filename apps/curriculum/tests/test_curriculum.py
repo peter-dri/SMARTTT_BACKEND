@@ -2,7 +2,7 @@ from django.test import TestCase
 from apps.departments.models import Faculty, Department
 from apps.programs.models import Program
 from apps.units.models import Unit
-from apps.curriculum.models.models import Curriculum, CurriculumUnit
+from apps.curriculum.models import Curriculum, CurriculumUnit
 
 
 class CurriculumTests(TestCase):

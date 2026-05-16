@@ -9,8 +9,9 @@ Orchestrates business logic:
 - TimetableConflictService: Detect and report conflicts
 """
 
-from django.db import transaction
+from django.db import models, transaction
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Count, F, Sum
 from rest_framework.exceptions import ValidationError
 
 from apps.timetable.models import TimetableSession, Room, TimeSlot
@@ -313,10 +314,7 @@ class TimetableFilterService:
         """Get statistics about timetable sessions."""
         return {
             "total_sessions": sessions.count(),
-            "total_credit_hours": sessions.aggregate(total=sum(F("unit__credit_hours")))[
-                "total"
-            ]
-            or 0,
+            "total_credit_hours": sessions.aggregate(total=Sum("unit__credit_hours"))["total"] or 0,
             "sessions_by_day": sessions.values("day_of_week").annotate(count=Count("id")),
             "sessions_by_type": sessions.values("session_type").annotate(count=Count("id")),
         }
@@ -382,7 +380,7 @@ class RoomAllocationService:
         sessions = RoomAllocationService.get_room_schedule(room_id, academic_year=academic_year)
 
         total_capacity_slots = sessions.count()
-        total_students = sessions.aggregate(total=sum(F("current_enrollment")))["total"] or 0
+        total_students = sessions.aggregate(total=Sum("current_enrollment"))["total"] or 0
 
         return {
             "room_id": room_id,
@@ -493,8 +491,6 @@ class LecturerScheduleService:
         Returns:
             Dictionary with workload statistics
         """
-        from django.db.models import Sum
-
         sessions = LecturerScheduleService.get_lecturer_schedule(
             lecturer_id, academic_year, semester
         )

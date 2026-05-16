@@ -1,4 +1,4 @@
-from apps.curriculum.models.models import Curriculum, CurriculumUnit
+from apps.curriculum.models import Curriculum, CurriculumUnit
 
 
 class CurriculumMapper:

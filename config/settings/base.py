@@ -2,7 +2,16 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+# Load environment variables from .env file
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ[key] = value
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-dev-secret-key")
 DEBUG = False
@@ -66,16 +75,26 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-	"default": {
-		"ENGINE": "django.db.backends.postgresql",
-		"NAME": os.getenv("POSTGRES_DB", "smarttt_db"),
-		"USER": os.getenv("POSTGRES_USER", "smarttt_user"),
-		"PASSWORD": os.getenv("POSTGRES_PASSWORD", "smarttt_password"),
-		"HOST": os.getenv("POSTGRES_HOST", "localhost"),
-		"PORT": os.getenv("POSTGRES_PORT", "5432"),
+USE_SQLITE = os.getenv("USE_SQLITE", "False").lower() == "true" or os.getenv("DJANGO_DB", "").lower() == "sqlite"
+
+if USE_SQLITE:
+	DATABASES = {
+		"default": {
+			"ENGINE": "django.db.backends.sqlite3",
+			"NAME": BASE_DIR / "db.sqlite3",
+		}
 	}
-}
+else:
+	DATABASES = {
+		"default": {
+			"ENGINE": "django.db.backends.postgresql",
+			"NAME": os.getenv("POSTGRES_DB", "smarttt_db"),
+			"USER": os.getenv("POSTGRES_USER", "smarttt_user"),
+			"PASSWORD": os.getenv("POSTGRES_PASSWORD", "smarttt_password"),
+			"HOST": os.getenv("POSTGRES_HOST", "localhost"),
+			"PORT": os.getenv("POSTGRES_PORT", "5432"),
+		}
+	}
 
 AUTH_USER_MODEL = "accounts.User"
 

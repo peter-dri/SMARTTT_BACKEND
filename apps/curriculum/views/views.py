@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from apps.curriculum.models.models import Curriculum
+from apps.curriculum.models import Curriculum
 from apps.curriculum.serializers.serializers import CurriculumSerializer
 from apps.curriculum.services.curriculum_mapper import CurriculumMapper
 from apps.programs.models import Program
