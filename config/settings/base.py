@@ -17,7 +17,7 @@ INSTALLED_APPS = [
 	"django.contrib.staticfiles",
 	"corsheaders",
 	"rest_framework",
-	"rest_framework_simplejwt.token_blacklist",
+	# Using Django's default session authentication instead of JWT
 	"django_filters",
 	"apps.common",
 	"apps.accounts",
@@ -27,7 +27,9 @@ INSTALLED_APPS = [
 	"apps.programs",
 	"apps.units",
 	"apps.curriculum",
+	"apps.personalization",
 	"apps.timetable",
+	"apps.uploads",
 	"apps.enrollments",
 	"apps.rooms",
 	"apps.analytics",
@@ -96,9 +98,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
+def env_list(name, default=""):
+	value = os.getenv(name, default)
+	if not value:
+		return []
+	return [item.strip() for item in value.split(",") if item.strip()]
+
 REST_FRAMEWORK = {
 	"DEFAULT_AUTHENTICATION_CLASSES": (
-		"rest_framework_simplejwt.authentication.JWTAuthentication",
+		"rest_framework.authentication.SessionAuthentication",
+		"rest_framework.authentication.BasicAuthentication",
 	),
 	"DEFAULT_PERMISSION_CLASSES": (
 		"rest_framework.permissions.IsAuthenticated",
@@ -112,12 +122,9 @@ REST_FRAMEWORK = {
 	"PAGE_SIZE": 25,
 }
 
-SIMPLE_JWT = {
-	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-	"REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-	"ROTATE_REFRESH_TOKENS": True,
-	"BLACKLIST_AFTER_ROTATION": True,
-	"AUTH_HEADER_TYPES": ("Bearer",),
-}
+
+# SIMPLE_JWT settings removed — using Django session authentication
 
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")

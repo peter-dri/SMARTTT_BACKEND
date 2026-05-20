@@ -11,3 +11,4 @@ class UnitViewSet(ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filterset_fields = ["department", "credit_hours"]
     search_fields = ["title", "code", "department__name"]
+    ordering_fields = ["code", "title", "credit_hours", "created_at", "updated_at"]
