@@ -5,9 +5,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db import transaction
+from datetime import datetime
+import re
 
 from apps.accounts.models import User
 from apps.departments.models import Department
+from apps.departments.models.models import Faculty
 from apps.programs.models.program import Program
 from apps.students.models.student import Student
 
@@ -59,18 +62,24 @@ class RegisterView(APIView):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            university_id=admission_number,
+            university_id=admission_number if admission_number else None,
             role=User.Role.STUDENT
         )
 
         if department_name and course_name:
-            import re
             dept_code = re.sub(r'[^A-Z]', '', department_name.upper())[:20]
             if not dept_code: dept_code = department_name.upper()[:20]
+
+            # Get or create a default faculty (required by Department FK)
+            fac_code = dept_code[:10] if dept_code else 'DEFAULT'
+            faculty, _ = Faculty.objects.get_or_create(
+                name=department_name,
+                defaults={'code': fac_code}
+            )
             
             department, _ = Department.objects.get_or_create(
                 name=department_name,
-                defaults={'code': dept_code}
+                defaults={'code': dept_code, 'faculty': faculty}
             )
             
             prog_code = re.sub(r'[^A-Z]', '', course_name.upper())[:30]
@@ -84,9 +93,6 @@ class RegisterView(APIView):
                 }
             )
 
-            from datetime import datetime
-            import re
-            
             reg_num = re.sub(r'[^A-Z0-9\-]', '', admission_number.upper()) if admission_number else f"STU-{user.id}"
             if not reg_num:
                 reg_num = f"STU-{user.id}"
@@ -155,7 +161,6 @@ class ProfileView(APIView):
             if 'year_of_study' in data:
                 student.current_study_year = data['year_of_study']
             if 'course' in data and 'department' in data:
-                import re
                 dept_code = re.sub(r'[^A-Z]', '', data['department'].upper())[:20]
                 if not dept_code: dept_code = data['department'].upper()[:20]
                 
