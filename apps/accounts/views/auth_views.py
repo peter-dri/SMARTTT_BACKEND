@@ -104,6 +104,24 @@ class RegisterView(APIView):
             if not reg_num:
                 reg_num = f"STU-{user.id}"
 
+            admission_yr = datetime.now().year
+            if reg_num:
+                match = re.search(r'[/\-](\d{2,4})$', reg_num.strip())
+                if match:
+                    yr_str = match.group(1)
+                    if len(yr_str) == 2:
+                        admission_yr = 2000 + int(yr_str)
+                    elif len(yr_str) == 4:
+                        admission_yr = int(yr_str)
+                else:
+                    match = re.search(r'^(\d{2})[/\-]', reg_num.strip())
+                    if match:
+                        admission_yr = 2000 + int(match.group(1))
+
+            from apps.timetable.models import AcademicTerm
+            current_term = AcademicTerm.objects.filter(is_current=True).first()
+            current_sem = current_term.semester if current_term else 1
+
             Student.objects.create(
                 user=user,
                 registration_number=reg_num,
@@ -112,8 +130,9 @@ class RegisterView(APIView):
                 email=email,
                 department=department,
                 program=program,
-                admission_year=datetime.now().year,
-                current_study_year=year_of_study
+                admission_year=admission_yr,
+                current_study_year=year_of_study,
+                current_semester=current_sem
             )
 
         tokens = get_tokens_for_user(user)
