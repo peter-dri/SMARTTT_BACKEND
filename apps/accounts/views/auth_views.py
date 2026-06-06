@@ -74,6 +74,7 @@ class RegisterView(APIView):
             username=email,
             email=email,
             password=password,
+            first_name=first_name,
             last_name=last_name,
             university_id=admission_number if admission_number else None,
             role=User.Role.STUDENT,

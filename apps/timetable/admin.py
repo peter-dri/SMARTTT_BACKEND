@@ -18,7 +18,7 @@ class AcademicTermAdmin(admin.ModelAdmin):
 class TimetableUploadBatchAdmin(admin.ModelAdmin):
     list_display = ("id", "status", "rows_received", "rows_saved", "created_at")
     list_filter = ("status", "created_at")
-    search_fields = ("status",)
+    search_fields = ("uploaded_by__last_name", "uploaded_by__first_name", "id")
 
 
 @admin.register(TimetableSlot)
