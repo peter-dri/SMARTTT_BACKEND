@@ -1,24 +1,19 @@
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
-from django.db import transaction
 from datetime import datetime
 import re
 
+from django.contrib.auth import authenticate
+from django.db import transaction
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from apps.accounts.models import User
-<<<<<<< HEAD
 from apps.departments.models import Department, Faculty
 from apps.programs.models import Program
 from apps.students.models import Student
-=======
-from apps.departments.models import Department
-from apps.departments.models.models import Faculty
-from apps.programs.models.program import Program
-from apps.students.models.student import Student
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -26,6 +21,7 @@ def get_tokens_for_user(user):
         'refresh': str(refresh),
         'access': str(refresh.access_token),
     }
+
 
 def serialize_user(user):
     student = getattr(user, 'student_profile', None)
@@ -35,17 +31,18 @@ def serialize_user(user):
         "full_name": user.get_full_name(),
         "admission_number": user.university_id,
         "course": student.program.name if student and student.program else None,
-<<<<<<< HEAD
         "department": (
             student.department.name
             if student and getattr(student, "department", None)
-            else (student.program.department.name if student and student.program and student.program.department else None)
+            else (
+                student.program.department.name
+                if student and student.program and student.program.department
+                else None
+            )
         ),
-=======
-        "department": student.program.department.name if student and student.program and student.program.department else None,
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
         "year_of_study": student.current_study_year if student else None,
     }
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -80,51 +77,33 @@ class RegisterView(APIView):
             first_name=first_name,
             last_name=last_name,
             university_id=admission_number if admission_number else None,
-            role=User.Role.STUDENT
+            role=User.Role.STUDENT,
         )
 
         if department_name and course_name:
             dept_code = re.sub(r'[^A-Z]', '', department_name.upper())[:20]
-            if not dept_code: dept_code = department_name.upper()[:20]
+            if not dept_code:
+                dept_code = department_name.upper()[:20]
 
-<<<<<<< HEAD
-            # Departments require a Faculty; create a safe default.
             faculty, _ = Faculty.objects.get_or_create(
                 code="GEN",
                 defaults={"name": "General", "description": "Default faculty"},
-=======
-            # Get or create a default faculty (required by Department FK)
-            fac_code = dept_code[:10] if dept_code else 'DEFAULT'
-            faculty, _ = Faculty.objects.get_or_create(
-                name=department_name,
-                defaults={'code': fac_code}
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
             )
-            
+
             department, _ = Department.objects.get_or_create(
                 faculty=faculty,
                 name=department_name,
-<<<<<<< HEAD
-                defaults={"code": dept_code},
-=======
-                defaults={'code': dept_code, 'faculty': faculty}
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
+                defaults={'code': dept_code},
             )
-            
+
             prog_code = re.sub(r'[^A-Z]', '', course_name.upper())[:30]
-            if not prog_code: prog_code = course_name.upper()[:30]
+            if not prog_code:
+                prog_code = course_name.upper()[:30]
 
             program, _ = Program.objects.get_or_create(
                 department=department,
                 name=course_name,
-                defaults={
-                    'code': prog_code,
-<<<<<<< HEAD
-=======
-                    'department': department,
-                    'duration_years': max(4, year_of_study)
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
-                }
+                defaults={'code': prog_code},
             )
             if program.duration_years < year_of_study:
                 program.duration_years = year_of_study
@@ -154,17 +133,6 @@ class RegisterView(APIView):
 
             Student.objects.create(
                 user=user,
-<<<<<<< HEAD
-                registration_number=admission_number,
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                department=department,
-                program=program,
-                admission_year=datetime.now().year,
-                current_study_year=year_of_study,
-                current_semester=1,
-=======
                 registration_number=reg_num,
                 first_name=first_name or "First",
                 last_name=last_name or "Last",
@@ -173,16 +141,16 @@ class RegisterView(APIView):
                 program=program,
                 admission_year=admission_yr,
                 current_study_year=year_of_study,
-                current_semester=current_sem
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
+                current_semester=current_sem,
             )
 
         tokens = get_tokens_for_user(user)
         return Response({
             "token": tokens['access'],
             "refresh": tokens['refresh'],
-            "user": serialize_user(user)
+            "user": serialize_user(user),
         }, status=status.HTTP_201_CREATED)
+
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -199,8 +167,9 @@ class LoginView(APIView):
         return Response({
             "token": tokens['access'],
             "refresh": tokens['refresh'],
-            "user": serialize_user(user)
+            "user": serialize_user(user),
         })
+
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -212,32 +181,29 @@ class ProfileView(APIView):
     def patch(self, request):
         user = request.user
         data = request.data
-        
+
         full_name = data.get('full_name')
         if full_name:
             name_parts = full_name.split(' ', 1)
             user.first_name = name_parts[0]
             user.last_name = name_parts[1] if len(name_parts) > 1 else ''
-            
+
         if 'admission_number' in data:
             user.university_id = data['admission_number']
-            
+
         user.save()
 
         student = getattr(user, 'student_profile', None)
         if student:
             if 'year_of_study' in data:
-<<<<<<< HEAD
-                student.current_study_year = data['year_of_study']
-=======
                 try:
                     student.current_study_year = int(data['year_of_study'])
                 except (ValueError, TypeError):
                     pass
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
             if 'course' in data and 'department' in data:
                 dept_code = re.sub(r'[^A-Z]', '', data['department'].upper())[:20]
-                if not dept_code: dept_code = data['department'].upper()[:20]
+                if not dept_code:
+                    dept_code = data['department'].upper()[:20]
 
                 faculty, _ = Faculty.objects.get_or_create(
                     code="GEN",
@@ -249,23 +215,20 @@ class ProfileView(APIView):
                     name=data['department'],
                     defaults={'code': dept_code},
                 )
-                
+
                 prog_code = re.sub(r'[^A-Z]', '', data['course'].upper())[:30]
-                if not prog_code: prog_code = data['course'].upper()[:30]
-                
+                if not prog_code:
+                    prog_code = data['course'].upper()[:30]
+
                 study_year = student.current_study_year
                 prog, _ = Program.objects.get_or_create(
                     department=dept,
                     name=data['course'],
-<<<<<<< HEAD
-                    defaults={'code': prog_code},
-=======
                     defaults={
                         'code': prog_code,
                         'department': dept,
-                        'duration_years': max(4, study_year)
-                    }
->>>>>>> ee31cab66c0474900ecd8694bbe0aa38c2c4fc1b
+                        'duration_years': max(4, study_year),
+                    },
                 )
                 if prog.duration_years < study_year:
                     prog.duration_years = study_year
@@ -276,7 +239,9 @@ class ProfileView(APIView):
 
         return Response(serialize_user(user))
 
+
 class PasswordResetView(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
         return Response({"detail": "Password reset email sent."})
