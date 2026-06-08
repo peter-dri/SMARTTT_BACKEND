@@ -14,6 +14,4 @@ __all__ = [
     "TimetableSessionValidator",
     "ConflictValidator",
 ]
-    "TimetableDataConsistencyValidator",
-    "ConflictValidationRules",
-]
+

@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: smarttt-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        value: "${DJANGO_SECRET_KEY}"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "${DJANGO_ALLOWED_HOSTS}"
+      - key: POSTGRES_DB
+        value: "${POSTGRES_DB}"
+      - key: POSTGRES_USER
+        value: "${POSTGRES_USER}"
+      - key: POSTGRES_PASSWORD
+        value: "${POSTGRES_PASSWORD}"
+      - key: POSTGRES_HOST
+        value: "${POSTGRES_HOST}"
+      - key: POSTGRES_PORT
+        value: "${POSTGRES_PORT}"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "${CORS_ALLOWED_ORIGINS}"
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "${CORS_ALLOW_ALL_ORIGINS}"
