@@ -1,6 +1,8 @@
 from django.contrib import admin
 
+
 from .models import Curriculum, CurriculumUnit, CurriculumVersion
+
 
 
 class CurriculumUnitInline(admin.TabularInline):

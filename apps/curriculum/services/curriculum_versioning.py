@@ -1,4 +1,4 @@
-from apps.curriculum.models.models import Curriculum
+from apps.curriculum.models import Curriculum
 
 
 class CurriculumVersioningService:

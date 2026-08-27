@@ -562,4 +562,3 @@ class StudentEnrollment(BaseModel):
             self.EnrollmentStatus.DEFERRED,
         ]
 
-

@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from apps.curriculum.models.models import Curriculum, CurriculumUnit
+from apps.curriculum.models import Curriculum, CurriculumUnit
+from apps.units.models import Unit
 from apps.units.serializers.serializers import UnitSerializer
 from apps.units.models import Unit
 

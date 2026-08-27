@@ -10,5 +10,4 @@ class UnitViewSet(ModelViewSet):
     serializer_class = UnitSerializer
     permission_classes = [IsAdminOrReadOnly]
     filterset_fields = ["department", "credit_hours"]
-    search_fields = ["title", "code", "department__name"]
-    ordering_fields = ["code", "title", "credit_hours", "created_at", "updated_at"]
+    search_fields = ["name", "code", "department__name"]

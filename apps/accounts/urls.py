@@ -1,18 +1,30 @@
-from django.urls import include, path
-from rest_framework.routers import DefaultRouter
-
-from apps.accounts.views import UserViewSet
-from apps.accounts.views.auth_views import LoginView, RegisterView, ProfileView, PasswordResetView, LogoutView
-
-router = DefaultRouter()
-router.register("users", UserViewSet, basename="users")
+from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views.auth_views import (
+    GoogleAuthView,
+    LecturerProfileView,
+    LecturerRegisterView,
+    LecturerStudentsView,
+    LoginView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+    ProfileView,
+    RegisterView,
+    StaffIDListView,
+    StaffIDUploadView,
+)
 
 urlpatterns = [
-    path("", include(router.urls)),
-    path("auth/login/", LoginView.as_view(), name="auth_login"),
-    path("auth/register/", RegisterView.as_view(), name="auth_register"),
-    path("auth/profile/", ProfileView.as_view(), name="auth_profile"),
-    path("auth/profile/update/", ProfileView.as_view(), name="auth_profile_update"),
-    path("auth/password/reset/", PasswordResetView.as_view(), name="auth_password_reset"),
-    path("auth/logout/", LogoutView.as_view(), name="auth_logout"),
+    path("register/", RegisterView.as_view(), name="register"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("password/reset/", PasswordResetRequestView.as_view(), name="password-reset"),
+    path("password/reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
+    path("profile/", ProfileView.as_view(), name="profile"),
+    path("google/", GoogleAuthView.as_view(), name="google-auth"),
+    path("lecturer/register/", LecturerRegisterView.as_view(), name="lecturer-register"),
+    path("lecturer/profile/", LecturerProfileView.as_view(), name="lecturer-profile"),
+    path("lecturer/students/", LecturerStudentsView.as_view(), name="lecturer-students"),
+    path("staff-ids/upload/", StaffIDUploadView.as_view(), name="staff-id-upload"),
+    path("staff-ids/", StaffIDListView.as_view(), name="staff-id-list"),
 ]
