@@ -71,10 +71,10 @@ class MyCalendarFeedView(APIView):
             event = Event()
 
             # First occurrence of the class in the semester
+            day_key = slot.day_of_week.upper()
             current = term.start_date
-            while current.weekday() != list(day_map.keys()).index(slot.day):
+            while current.weekday() != list(day_map.keys()).index(day_key):
                 current += timedelta(days=1)
-
             start_dt = tz.localize(
                 datetime.combine(current, slot.start_time)
             )
