@@ -34,6 +34,7 @@ class TimetableUploadBatch(BaseModel):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RECEIVED)
     rows_received = models.PositiveIntegerField(default=0)
     rows_saved = models.PositiveIntegerField(default=0)
+    rows_failed = models.PositiveIntegerField(default=0)
     validation_errors = models.JSONField(default=list, blank=True)
 
 
@@ -70,6 +71,16 @@ class TimetableSlot(BaseModel):
         "lecturers.Lecturer",
         on_delete=models.PROTECT,
         related_name="teaching_slots",
+        null=True,
+        blank=True,
+    )
+    lecturer_name_text = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Fallback display name for the lecturer when no linked "
+                  "Lecturer account exists yet (e.g. parsed from a document "
+                  "but not yet matched to a registered account).",
     )
     room = models.ForeignKey(
         "rooms.Room",
@@ -80,6 +91,20 @@ class TimetableSlot(BaseModel):
     start_time = models.TimeField()
     end_time = models.TimeField()
     class_group = models.CharField(max_length=50, default="MAIN")
+    stream = models.CharField(
+        max_length=10,
+        blank=True,
+        default="",
+        help_text="Numbered sub-stream of this program+year+semester cohort as "
+                  "printed on the master timetable, e.g. the '1' in "
+                  "'BED.MATH/CHEM Y3S1(1)'. Blank when the cohort has only one "
+                  "stream. Unlike class_group (which varies per shared unit "
+                  "pool - e.g. GR_J for one pool, GR_C for another, within the "
+                  "same stream), this identifies the single physical row/class "
+                  "the slot was printed under, so a student's whole stream can "
+                  "be selected as one consistent set regardless of how many "
+                  "different class_group letters its units individually use.",
+    )
     upload_batch = models.ForeignKey(
         "timetable.TimetableUploadBatch",
         on_delete=models.SET_NULL,
@@ -90,6 +115,15 @@ class TimetableSlot(BaseModel):
 
     class Meta:
         ordering = ["term", "day_of_week", "start_time"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "term", "program", "unit", "year_of_study", "day_of_week",
+                    "start_time", "end_time", "room", "class_group", "stream",
+                ],
+                name="unique_timetable_slot",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.unit.code} {self.day_of_week} {self.start_time}"

@@ -10,15 +10,37 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_ALLOWED_HOSTS
-        value: smarttt-backend.onrender.com
+        value: nextup.co.ke,www.nextup.co.ke
       - key: CORS_ALLOWED_ORIGINS
         value: https://smart-timetable-8f116.web.app
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://smarttt-backend.onrender.com
+        value: https://nextup.co.ke,https://www.nextup.co.ke
       - key: DATABASE_URL
         fromDatabase:
           name: smarttt-db
           property: connectionString
+      - key: FIREBASE_PROJECT_ID
+        value: smart-timetable-8f116
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+
+  - type: cron
+    name: smarttt-class-reminders
+    runtime: python
+    schedule: "* * * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py send_class_reminders
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smarttt-db
+          property: connectionString
+      - key: FIREBASE_PROJECT_ID
+        value: smart-timetable-8f116
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
 
 databases:
   - name: smarttt-db

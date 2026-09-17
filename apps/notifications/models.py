@@ -31,40 +31,52 @@ class FCMToken(models.Model):
         return f"{self.user.email} [{self.platform}]"
 
 
+class Target(models.TextChoices):
+    ALL = "all", "All Students"
+    PROGRAM = "program", "Specific Program"
+    YEAR = "year", "Specific Year of Study"
+
+
+class NotificationType(models.TextChoices):
+    TIMETABLE_CHANGE = "timetable_change", "Timetable Change"
+    VENUE_CHANGE = "venue_change", "Venue Change"
+    CLASS_REMINDER = "class_reminder", "Class Reminder"
+    SYNC_REMINDER = "sync_reminder", "Sync Reminder"
+    REGISTRATION_REMINDER = "registration_reminder", "Registration Reminder"
+    GENERAL = "general", "General"
+
+
 class Notification(models.Model):
     """
     A notification sent by admin to students.
     Stored in DB so students can see notification history in the Alerts screen.
     """
-    class Target(models.TextChoices):
-        ALL = "all", "All Students"
-        PROGRAM = "program", "Specific Program"
-        YEAR = "year", "Specific Year of Study"
-
-    class Type(models.TextChoices):
-        TIMETABLE_CHANGE = "timetable_change", "Timetable Change"
-        SYNC_REMINDER = "sync_reminder", "Sync Reminder"
-        REGISTRATION_REMINDER = "registration_reminder", "Registration Reminder"
-        GENERAL = "general", "General"
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sent_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="sent_notifications",
     )
     title = models.CharField(max_length=255)
     message = models.TextField()
     notification_type = models.CharField(
-        max_length=30, choices=Type.choices, default=Type.GENERAL
+        max_length=30,
+        choices=NotificationType.choices,
+        default=NotificationType.GENERAL,
     )
     target = models.CharField(max_length=20, choices=Target.choices, default=Target.ALL)
     target_program = models.ForeignKey(
-        "core.Program", on_delete=models.SET_NULL,
+        "programs.Program", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="notifications",
     )
     target_year = models.PositiveSmallIntegerField(null=True, blank=True)
     recipients_count = models.PositiveIntegerField(default=0)
+    new_venue = models.ForeignKey(
+        "rooms.Room", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    expected_students = models.PositiveIntegerField(null=True, blank=True)
     sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -97,3 +109,33 @@ class StudentNotification(models.Model):
 
     def __str__(self):
         return f"{self.user.email} — {self.notification.title}"
+
+
+class ClassReminderDelivery(models.Model):
+    """Idempotency record for an automated class reminder delivery."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    slot = models.ForeignKey(
+        "timetable.TimetableSlot",
+        on_delete=models.CASCADE,
+        related_name="reminder_deliveries",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="class_reminder_deliveries",
+    )
+    occurrence_date = models.DateField()
+    minutes_before = models.PositiveSmallIntegerField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["slot", "user", "occurrence_date", "minutes_before"],
+                name="unique_class_reminder_delivery",
+            )
+        ]
+        ordering = ["-sent_at"]
+
+    def __str__(self):
+        return f"{self.user.email} — {self.slot.unit.code} ({self.minutes_before}m)"

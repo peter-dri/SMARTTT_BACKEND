@@ -31,22 +31,18 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "apps.accounts",
-    "apps.analytics",
     "apps.common",
-    "apps.core",
     "apps.curriculum",
     "apps.departments",
     "apps.enrollments",
     "apps.lecturers",
     "apps.notifications",
-    "apps.personalization",
     "apps.programs",
     "apps.rooms",
     "apps.schedule",
     "apps.students",
     "apps.timetable",
     "apps.units",
-    "apps.uploads",
     "apps.courses",
 ]
 
@@ -129,7 +125,7 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@nextup.co.ke")
 FRONTEND_RESET_PASSWORD_URL = os.getenv(
     "FRONTEND_RESET_PASSWORD_URL",
-    "http://localhost:8080/reset-password",
+    "https://nextup.co.ke/reset-password.html",
 )
 
 PASSWORD_HASHERS = [

@@ -85,23 +85,13 @@ class TimetableUploadBatchSerializer(serializers.ModelSerializer):
 
 
 class TimetableSlotDetailedSerializer(serializers.ModelSerializer):
-   
     term_display = serializers.CharField(source="term.__str__", read_only=True)
-    unit_display = serializers.CharField(
-        source="unit.__str__",
-        read_only=True
-    )
-    program_display = serializers.CharField(
-        source="program.__str__",
-        read_only=True
-    )
-    lecturer_display = serializers.CharField(
-        source="lecturer.user.get_full_name",
-        read_only=True
-    )
+    unit_display = serializers.CharField(source="unit.__str__", read_only=True)
+    program_display = serializers.CharField(source="program.__str__", read_only=True)
+    lecturer_display = serializers.SerializerMethodField()
     room_display = serializers.CharField(source="room.code", read_only=True)
     day_display = serializers.CharField(source="get_day_of_week_display", read_only=True)
-    
+
     class Meta:
         model = TimetableSlot
         fields = (
@@ -128,22 +118,34 @@ class TimetableSlotDetailedSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "updated_at")
 
+    def get_lecturer_display(self, obj) -> str:
+        if obj.lecturer and hasattr(obj.lecturer, "user") and obj.lecturer.user:
+            name = obj.lecturer.user.get_full_name().strip()
+            if name:
+                return name
+        return getattr(obj, "lecturer_name_text", "") or ""
+
+    def get_lecturer_display(self, obj) -> str:
+        if obj.lecturer and hasattr(obj.lecturer, "user") and obj.lecturer.user:
+            name = obj.lecturer.user.get_full_name().strip()
+            if name:
+                return name
+        return getattr(obj, "lecturer_name_text", "") or ""
+
 
 class TimetableSlotSerializer(serializers.ModelSerializer):
     """Standard serializer for TimetableSlot model."""
 
-    subject = serializers.CharField(source="curriculum_unit.unit.name", read_only=True)
-    instructor = serializers.CharField(source="lecturer.user.get_full_name", read_only=True)
+    subject = serializers.CharField(source="unit.name", read_only=True)
+    instructor = serializers.SerializerMethodField()
     location = serializers.CharField(source="room.code", read_only=True)
+    unit_code = serializers.CharField(source="unit.code", read_only=True)
 
     curriculum_unit_display = serializers.CharField(
-        source="curriculum_unit.__str__",
+        source="unit.__str__",
         read_only=True,
     )
-    lecturer_display = serializers.CharField(
-        source="lecturer.user.get_full_name",
-        read_only=True,
-    )
+    lecturer_display = serializers.SerializerMethodField()
     room_display = serializers.CharField(source="room.code", read_only=True)
     
     class Meta:
@@ -164,13 +166,56 @@ class TimetableSlotSerializer(serializers.ModelSerializer):
             "class_group",
             "upload_batch",
             "created_at",
+            "curriculum_unit_display",
 
             # Frontend-friendly aliases
             "subject",
             "instructor",
             "location",
+            "unit_code",
         )
         read_only_fields = ("id", "created_at")
+
+    def get_instructor(self, obj) -> str:
+        # 1. First check if a registered Lecturer user account exists
+        if obj.lecturer and hasattr(obj.lecturer, "user") and obj.lecturer.user:
+            name = obj.lecturer.user.get_full_name().strip()
+            if name:
+                return name
+        # 2. Fall back to the name parsed from the .docx file!
+        return getattr(obj, "lecturer_name_text", "") or ""
+
+    def get_lecturer_display(self, obj) -> str:
+        return self.get_instructor(obj)
+
+
+class TimetableSlotRescheduleSerializer(serializers.Serializer):
+    """
+    Deliberately narrow: only the fields a reschedule is allowed to touch.
+    Unlike TimetableSlotSerializer, this can never be used to change the
+    unit, program, lecturer, or class_group on a slot.
+    """
+    day_of_week = serializers.ChoiceField(choices=TimetableSlot.WeekDay.choices, required=False)
+    start_time = serializers.TimeField(required=False)
+    end_time = serializers.TimeField(required=False)
+    room = serializers.PrimaryKeyRelatedField(
+        queryset=TimetableSlot._meta.get_field("room").related_model.objects.all(),
+        required=False,
+    )
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+    def validate(self, data):
+        if not any(k in data for k in ("day_of_week", "start_time", "end_time", "room")):
+            raise serializers.ValidationError(
+                "Provide at least one of day_of_week, start_time, end_time, room."
+            )
+
+        instance = self.instance
+        start_time = data.get("start_time", instance.start_time if instance else None)
+        end_time = data.get("end_time", instance.end_time if instance else None)
+        if start_time and end_time and start_time >= end_time:
+            raise serializers.ValidationError({"end_time": "Must be after start_time."})
+        return data
 
 
 class ConflictDetailSerializer(serializers.ModelSerializer):
