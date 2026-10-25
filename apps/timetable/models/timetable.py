@@ -82,6 +82,15 @@ class TimetableSlot(BaseModel):
                   "Lecturer account exists yet (e.g. parsed from a document "
                   "but not yet matched to a registered account).",
     )
+    allocation_document = models.ForeignKey(
+        "timetable.AllocationDocument",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_slots",
+        help_text="Department allocation document whose row currently sets this "
+                  "slot's lecturer; blank when set by hand or not yet allocated.",
+    )
     room = models.ForeignKey(
         "rooms.Room",
         on_delete=models.PROTECT,
@@ -112,6 +121,16 @@ class TimetableSlot(BaseModel):
         blank=True,
         related_name="slots",
     )
+    generator_key = models.CharField(
+        max_length=160,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Set on slots published by the Timetable Generator: its stable "
+                  "session key plus the class row ('COSC103-GRA-1|BSCCOMPSCIY1S1'), "
+                  "so a later version updates the same slot (keeping its lecturer) "
+                  "instead of replacing it. Blank for uploaded slots.",
+    )
 
     class Meta:
         ordering = ["term", "day_of_week", "start_time"]
@@ -127,6 +146,30 @@ class TimetableSlot(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.unit.code} {self.day_of_week} {self.start_time}"
+
+
+class TimetablePublication(BaseModel):
+    """
+    A version of a term's master timetable published by the Timetable
+    Generator (apps/integrations/generator_publish.py). Versions only go up;
+    re-sending one is answered with the stored result.
+    """
+
+    term = models.ForeignKey("timetable.AcademicTerm", on_delete=models.CASCADE, related_name="publications")
+    version = models.PositiveIntegerField()
+    based_on_version = models.PositiveIntegerField(null=True, blank=True)
+    published_by = models.CharField(max_length=255)
+    payload_sha256 = models.CharField(max_length=64)
+    session_count = models.PositiveIntegerField(default=0)
+    slot_count = models.PositiveIntegerField(default=0)
+    result = models.JSONField(default=dict)
+
+    class Meta:
+        unique_together = ("term", "version")
+        ordering = ["term", "-version"]
+
+    def __str__(self) -> str:
+        return f"{self.term} v{self.version}"
 
 
 class TimetableConflict(BaseModel):

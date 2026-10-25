@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from django.conf import settings
+from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -28,8 +29,10 @@ from apps.timetable.serializers import (
     TimetableUploadBatchDetailedSerializer,
 )
 from apps.timetable.permissions import CanManageTimetable, CanRescheduleTimetableSlot
+from apps.timetable.services.allocation_service import resolve_academic_year
 from apps.timetable.services.background_worker import dispatch_async_upload
 from apps.timetable.services.reschedule_notifications import notify_students_of_reschedule
+from apps.integrations.attendance_push import notify_attendance_of_reschedule
 from apps.timetable.validators import ExcelFileValidator
 from apps.timetable.utils import TimetableResponseFormatter
 
@@ -49,6 +52,18 @@ class AcademicTermViewSet(ModelViewSet):
     ordering_fields = ["-academic_year", "-semester", "is_current"]
     ordering = ["-academic_year", "-semester"]
     pagination_class = StandardResultsSetPagination
+
+    @action(detail=True, methods=["post"], url_path="set-current")
+    def set_current(self, request, pk=None):
+        term = self.get_object()
+        with transaction.atomic():
+            AcademicTerm.objects.filter(is_current=True).exclude(pk=term.pk).update(is_current=False)
+            term.is_current = True
+            term.save(update_fields=["is_current"])
+        return Response(
+            {"detail": f"{term} is now the current term."},
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=["delete"], url_path="clear-slots")
     def clear_slots(self, request, pk=None):
@@ -109,9 +124,9 @@ class TimetableSlotViewSet(ModelViewSet):
 
         Moves a class to a new day/time/room. Callable by admins/registrar/
         department admins for any slot, or by a lecturer for a slot they
-        teach. Rejects the change if it collides with another class already
-        booked in that room at the new day/time, and — on success — notifies
-        every student enrolled in the unit this term.
+        teach. A room already booked by another class at the new day/time is
+        NOT rejected (rooms may be shared/double-booked by design); on
+        success every student enrolled in the unit this term is notified.
         """
         slot = self.get_object()  # runs CanRescheduleTimetableSlot.has_object_permission
 
@@ -125,26 +140,6 @@ class TimetableSlotViewSet(ModelViewSet):
         new_room = data.get("room", slot.room)
         reason = data.get("reason", "")
 
-        conflict = (
-            TimetableSlot.objects.filter(term=slot.term_id, day_of_week=new_day, room=new_room)
-            .exclude(pk=slot.pk)
-            .filter(start_time__lt=new_end, end_time__gt=new_start)
-            .select_related("unit")
-            .first()
-        )
-        if conflict:
-            return Response(
-                {
-                    "detail": (
-                        f"{new_room.code} is already booked on "
-                        f"{conflict.get_day_of_week_display()} "
-                        f"{conflict.start_time:%H:%M}-{conflict.end_time:%H:%M} "
-                        f"for {conflict.unit.code if conflict.unit else 'another class'}."
-                    )
-                },
-                status=status.HTTP_409_CONFLICT,
-            )
-
         old_day, old_start, old_end, old_room = (
             slot.day_of_week, slot.start_time, slot.end_time, slot.room,
         )
@@ -154,6 +149,10 @@ class TimetableSlotViewSet(ModelViewSet):
         slot.end_time = new_end
         slot.room = new_room
         slot.save(update_fields=["day_of_week", "start_time", "end_time", "room", "updated_at"])
+
+        # The attendance backend gates class activation on the slot's day/time and
+        # fences check-ins to its room, so it is told straight away.
+        notify_attendance_of_reschedule(slot)
 
         notify_result = notify_students_of_reschedule(
             slot,
@@ -275,7 +274,8 @@ class TimetableUploadAPIView(APIView):
             )
 
         upload_batch = serializer.save(status="processing")
-        academic_year = request.data.get("academic_year", "2026/2027")
+        # Same default as the allocation upload, so lecturers land on these slots.
+        academic_year = request.data.get("academic_year") or resolve_academic_year() or "2026/2027"
 
         # Spawn daemon worker thread
         dispatch_async_upload(upload_batch, saved_file_path, academic_year=academic_year)

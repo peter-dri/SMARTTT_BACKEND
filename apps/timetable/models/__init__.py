@@ -3,7 +3,8 @@ from apps.units.models import Unit
 from .room import Room
 from .time_slot import TimeSlot
 from .timetable_session import TimetableSession
-from .timetable import AcademicTerm, TimetableConflict, TimetableSlot, TimetableUploadBatch
+from .timetable import AcademicTerm, TimetableConflict, TimetablePublication, TimetableSlot, TimetableUploadBatch
+from .allocation import AllocationDocument
 
 __all__ = [
     "Room",
@@ -13,5 +14,7 @@ __all__ = [
     "Unit",
     "TimetableUploadBatch",
     "TimetableSlot",
+    "TimetablePublication",
     "TimetableConflict",
+    "AllocationDocument",
 ]
